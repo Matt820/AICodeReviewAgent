@@ -1,0 +1,56 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "AiCodeReviewAgent.Infrastructure/1.0.0": {
+        "dependencies": {
+          "AiCodeReviewAgent.Application": "1.0.0",
+          "AiCodeReviewAgent.Domain": "1.0.0"
+        },
+        "runtime": {
+          "AiCodeReviewAgent.Infrastructure.dll": {}
+        }
+      },
+      "AiCodeReviewAgent.Application/1.0.0": {
+        "dependencies": {
+          "AiCodeReviewAgent.Domain": "1.0.0"
+        },
+        "runtime": {
+          "AiCodeReviewAgent.Application.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "AiCodeReviewAgent.Domain/1.0.0": {
+        "runtime": {
+          "AiCodeReviewAgent.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "AiCodeReviewAgent.Infrastructure/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AiCodeReviewAgent.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AiCodeReviewAgent.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
