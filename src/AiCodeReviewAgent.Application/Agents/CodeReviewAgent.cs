@@ -48,6 +48,20 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
             context.ToolResults.Add(result);
         }
 
+        var searchTextTool = _tools.FirstOrDefault(x => x.Name == "search_text");
+
+        if (searchTextTool is not null)
+        {
+            var className = Path.GetFileNameWithoutExtension(changedFilePath);
+
+            var result = await searchTextTool.ExecuteAsync(
+                repositoryPath,
+                className,
+                cancellationToken);
+
+            context.ToolResults.Add(result);
+        }
+
         var prompt = BuildPrompt(changedFilePath, context);
 
         return await _aiClient.AnalyzeCodeAsync(
@@ -85,8 +99,10 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
         {context.PullRequestDiff}
         ```
 
-        Contexto obtenido mediante tools:
+        Contexto obtenido mediante tools del agente:
         {toolContext}
+
+        Usa el contexto de las tools para detectar si el cambio afecta otras partes del sistema.
 
         Realiza un code review profesional en español.
 
