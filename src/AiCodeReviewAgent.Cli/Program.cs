@@ -12,9 +12,10 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Configuration.AddUserSecrets<Program>();
 
 builder.Services.AddHttpClient<IAiCodeReviewClient, OpenAiCodeReviewClient>();
+builder.Services.AddHttpClient<IGitHubPullRequestClient, GitHubPullRequestClient>();
+
 builder.Services.AddScoped<IAiRepositoryAnalysisService, AiRepositoryAnalysisService>();
 builder.Services.AddScoped<IAiMarkdownReportService, AiMarkdownReportService>();
-builder.Services.AddHttpClient<IGitHubPullRequestClient, GitHubPullRequestClient>();
 
 using var host = builder.Build();
 
