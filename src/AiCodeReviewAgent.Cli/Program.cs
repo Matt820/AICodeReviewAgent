@@ -5,12 +5,15 @@ using AiCodeReviewAgent.Infrastructure.Ai;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
+using AiCodeReviewAgent.Infrastructure.GitHub;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Configuration.AddUserSecrets<Program>();
 
 builder.Services.AddHttpClient<IAiCodeReviewClient, OpenAiCodeReviewClient>();
+builder.Services.AddHttpClient<IGitHubPullRequestClient, GitHubPullRequestClient>();
+
 builder.Services.AddScoped<IAiRepositoryAnalysisService, AiRepositoryAnalysisService>();
 builder.Services.AddScoped<IAiMarkdownReportService, AiMarkdownReportService>();
 
