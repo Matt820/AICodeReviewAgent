@@ -1,0 +1,35 @@
+name: AI Code Review
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run AI Code Review
+        env:
+          OpenAI__ApiKey: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          dotnet run --project src/AiCodeReviewAgent.Cli --configuration Release -- analyze "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/code-review-ai-report.md"
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-review-ai-report
+          path: code-review-ai-report.md

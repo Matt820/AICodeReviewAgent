@@ -9,3 +9,4 @@ D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Domain\obj\Debug\
 D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Domain\obj\Debug\net10.0\refint\AiCodeReviewAgent.Domain.dll
 D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Domain\obj\Debug\net10.0\AiCodeReviewAgent.Domain.pdb
 D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Domain\obj\Debug\net10.0\ref\AiCodeReviewAgent.Domain.dll
+D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Domain\obj\Debug\net10.0\AiCodeReviewAgent.Domain.sourcelink.json

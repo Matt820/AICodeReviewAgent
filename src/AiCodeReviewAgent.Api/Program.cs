@@ -1,5 +1,8 @@
 using AiCodeReviewAgent.Application.Reviews;
 using AiCodeReviewAgent.Application.Reviews.Rules;
+using AiCodeReviewAgent.Application.Repositories;
+using AiCodeReviewAgent.Application.Reports;
+using AiCodeReviewAgent.Infrastructure.Ai;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +14,12 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ICodeReviewService, CodeReviewService>();
 builder.Services.AddScoped<ICodeReviewRule, AvoidConsoleWriteLineRule>();
 builder.Services.AddScoped<ICodeReviewRule, AvoidGenericExceptionCatchRule>();
+builder.Services.AddScoped<IRepositoryAnalysisService, RepositoryAnalysisService>();
+builder.Services.AddScoped<IMarkdownReportService, MarkdownReportService>();
+builder.Services.AddScoped<IAiRepositoryAnalysisService, AiRepositoryAnalysisService>();
+builder.Services.AddScoped<IAiMarkdownReportService, AiMarkdownReportService>();
+
+builder.Services.AddHttpClient<IAiCodeReviewClient, OpenAiCodeReviewClient>();
 
 var app = builder.Build();
 
@@ -25,48 +34,3 @@ app.UseHttpsRedirection();
 app.MapControllers();
 
 app.Run();
-/* using AiCodeReviewAgent.Application.Reviews;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-builder.Services.AddScoped<ICodeReviewService, CodeReviewService>();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
-app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
- */

@@ -101,3 +101,4 @@ D:\Dalinn\Portfolio\ai-code-review-agent\tests\AiCodeReviewAgent.Tests\obj\Debug
 D:\Dalinn\Portfolio\ai-code-review-agent\tests\AiCodeReviewAgent.Tests\obj\Debug\net10.0\AiCodeReviewAgent.Tests.genruntimeconfig.cache
 D:\Dalinn\Portfolio\ai-code-review-agent\tests\AiCodeReviewAgent.Tests\obj\Debug\net10.0\ref\AiCodeReviewAgent.Tests.dll
 D:\Dalinn\Portfolio\ai-code-review-agent\tests\AiCodeReviewAgent.Tests\bin\Debug\net10.0\FluentAssertions.dll
+D:\Dalinn\Portfolio\ai-code-review-agent\tests\AiCodeReviewAgent.Tests\obj\Debug\net10.0\AiCodeReviewAgent.Tests.sourcelink.json

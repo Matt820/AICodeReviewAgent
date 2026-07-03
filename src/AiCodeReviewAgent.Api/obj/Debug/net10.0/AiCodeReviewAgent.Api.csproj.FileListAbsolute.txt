@@ -40,3 +40,4 @@ D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Api\obj\Debug\net
 D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Api\bin\Debug\net10.0\Swashbuckle.AspNetCore.Swagger.dll
 D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Api\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Api\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Api\obj\Debug\net10.0\AiCodeReviewAgent.Api.sourcelink.json

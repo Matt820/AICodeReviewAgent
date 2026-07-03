@@ -15,3 +15,4 @@ D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Infrastructure\ob
 D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Infrastructure\obj\Debug\net10.0\refint\AiCodeReviewAgent.Infrastructure.dll
 D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Infrastructure\obj\Debug\net10.0\AiCodeReviewAgent.Infrastructure.pdb
 D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Infrastructure\obj\Debug\net10.0\ref\AiCodeReviewAgent.Infrastructure.dll
+D:\Dalinn\Portfolio\ai-code-review-agent\src\AiCodeReviewAgent.Infrastructure\obj\Debug\net10.0\AiCodeReviewAgent.Infrastructure.sourcelink.json

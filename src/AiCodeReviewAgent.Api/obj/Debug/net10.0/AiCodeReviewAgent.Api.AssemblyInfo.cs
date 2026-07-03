@@ -10,10 +10,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("f3f1c31f-e606-451e-9a83-6d0097dd3b90")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("AiCodeReviewAgent.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d364e55c303581cc8b8fa4d8ec9541cfeb4c1ba7")]
 [assembly: System.Reflection.AssemblyProductAttribute("AiCodeReviewAgent.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AiCodeReviewAgent.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
