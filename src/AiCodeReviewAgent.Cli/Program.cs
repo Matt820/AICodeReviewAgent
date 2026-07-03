@@ -16,6 +16,7 @@ builder.Configuration.AddUserSecrets<Program>();
 builder.Services.AddHttpClient<IAiCodeReviewClient, OpenAiCodeReviewClient>();
 builder.Services.AddHttpClient<IGitHubPullRequestClient, GitHubPullRequestClient>();
 builder.Services.AddHttpClient<IGitHubPullRequestCommentClient, GitHubPullRequestCommentClient>();
+builder.Services.AddHttpClient<IGitHubPullRequestCommentManager, GitHubPullRequestCommentManager>();
 
 builder.Services.AddScoped<IAiRepositoryAnalysisService, AiRepositoryAnalysisService>();
 builder.Services.AddScoped<IAiMarkdownReportService, AiMarkdownReportService>();
@@ -24,6 +25,7 @@ builder.Services.AddScoped<IAgentTool, SearchTextTool>();
 builder.Services.AddScoped<ICodeReviewAgent, CodeReviewAgent>();
 builder.Services.AddScoped<IAgentTool, RunBuildTool>();
 builder.Services.AddScoped<IAgentTool, RunTestsTool>();
+
 
 using var host = builder.Build();
 
@@ -59,7 +61,8 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
     Console.WriteLine($"Archivos .cs modificados encontrados: {files.Count}");
     
     var codeReviewAgent = prScope.ServiceProvider.GetRequiredService<ICodeReviewAgent>();
-    var commentClient = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestCommentClient>();
+    //var commentClient = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestCommentClient>();
+    var commentManager = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestCommentManager>();
 
     var prMarkdown = new System.Text.StringBuilder();
 
@@ -106,7 +109,7 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
         prMarkdown.AppendLine();
     }
 
-    await commentClient.CreateCommentAsync(
+    await commentManager.UpsertCommentAsync(
         repository,
         prNumber,
         githubToken,
