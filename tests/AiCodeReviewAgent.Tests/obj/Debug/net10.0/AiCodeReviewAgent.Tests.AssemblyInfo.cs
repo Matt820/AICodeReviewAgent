@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AiCodeReviewAgent.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d364e55c303581cc8b8fa4d8ec9541cfeb4c1ba7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7e3bde892c8758334763cade66c1b3a92acc07a2")]
 [assembly: System.Reflection.AssemblyProductAttribute("AiCodeReviewAgent.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AiCodeReviewAgent.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

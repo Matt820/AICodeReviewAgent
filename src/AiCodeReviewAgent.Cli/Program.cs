@@ -16,6 +16,45 @@ builder.Services.AddScoped<IAiMarkdownReportService, AiMarkdownReportService>();
 
 using var host = builder.Build();
 
+if (args.Length >= 1 && args[0] == "analyze-pr")
+{
+    var repository = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY");
+    var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+
+    if (string.IsNullOrWhiteSpace(repository))
+        throw new InvalidOperationException("No se encontró GITHUB_REPOSITORY.");
+
+    if (string.IsNullOrWhiteSpace(githubToken))
+        throw new InvalidOperationException("No se encontró GITHUB_TOKEN.");
+
+    var prNumber = GitHubEventReader.GetPullRequestNumber();
+
+    using var prScope = host.Services.CreateScope();
+
+    var githubClient = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestClient>();
+
+    Console.WriteLine($"Analizando PR #{prNumber} en {repository}...");
+
+    var files = await githubClient.GetChangedFilesAsync(
+        new PullRequestAnalysisRequest
+        {
+            Repository = repository,
+            PullRequestNumber = prNumber,
+            GitHubToken = githubToken,
+            MaxFiles = 10
+        },
+        CancellationToken.None);
+
+    Console.WriteLine($"Archivos .cs modificados encontrados: {files.Count}");
+
+    foreach (var file in files)
+    {
+        Console.WriteLine($"- {file.FileName} ({file.Status})");
+    }
+
+    return;
+}
+
 if (args.Length < 2 || args[0] != "analyze")
 {
     Console.WriteLine("Uso:");

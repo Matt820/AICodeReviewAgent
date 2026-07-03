@@ -3,6 +3,7 @@ using AiCodeReviewAgent.Application.Reviews.Rules;
 using AiCodeReviewAgent.Application.Repositories;
 using AiCodeReviewAgent.Application.Reports;
 using AiCodeReviewAgent.Infrastructure.Ai;
+using AiCodeReviewAgent.Infrastructure.GitHub;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,7 @@ builder.Services.AddScoped<IAiRepositoryAnalysisService, AiRepositoryAnalysisSer
 builder.Services.AddScoped<IAiMarkdownReportService, AiMarkdownReportService>();
 
 builder.Services.AddHttpClient<IAiCodeReviewClient, OpenAiCodeReviewClient>();
+builder.Services.AddHttpClient<IGitHubPullRequestClient, GitHubPullRequestClient>();
 
 var app = builder.Build();
 
