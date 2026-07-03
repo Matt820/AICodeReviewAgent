@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using AiCodeReviewAgent.Infrastructure.GitHub;
+using AiCodeReviewAgent.Application.Agents;
+using AiCodeReviewAgent.Application.Tools;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -17,6 +19,9 @@ builder.Services.AddHttpClient<IGitHubPullRequestCommentClient, GitHubPullReques
 
 builder.Services.AddScoped<IAiRepositoryAnalysisService, AiRepositoryAnalysisService>();
 builder.Services.AddScoped<IAiMarkdownReportService, AiMarkdownReportService>();
+builder.Services.AddScoped<IAgentTool, ReadFileTool>();
+builder.Services.AddScoped<IAgentTool, SearchTextTool>();
+builder.Services.AddScoped<ICodeReviewAgent, CodeReviewAgent>();
 
 using var host = builder.Build();
 
@@ -51,7 +56,8 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
 
     Console.WriteLine($"Archivos .cs modificados encontrados: {files.Count}");
 
-    var aiClient = prScope.ServiceProvider.GetRequiredService<IAiCodeReviewClient>();
+    //var aiClient = prScope.ServiceProvider.GetRequiredService<IAiCodeReviewClient>();
+    var codeReviewAgent = prScope.ServiceProvider.GetRequiredService<ICodeReviewAgent>();
     var commentClient = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestCommentClient>();
 
     var prMarkdown = new System.Text.StringBuilder();
@@ -67,14 +73,19 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
         if (string.IsNullOrWhiteSpace(file.Patch))
             continue;
 
-        var review = await aiClient.AnalyzeCodeAsync(
+        /* var review = await aiClient.AnalyzeCodeAsync(
             new AnalyzeCodeRequest
             {
                 FileName = file.FileName,
                 Language = "diff",
                 Code = file.Patch
             },
-            CancellationToken.None);
+            CancellationToken.None); */
+            var review = await codeReviewAgent.ReviewPullRequestAsync(
+                Environment.GetEnvironmentVariable("GITHUB_WORKSPACE") ?? Directory.GetCurrentDirectory(),
+                file.FileName,
+                file.Patch,
+                CancellationToken.None);
 
         prMarkdown.AppendLine($"### `{file.FileName}`");
         prMarkdown.AppendLine();
