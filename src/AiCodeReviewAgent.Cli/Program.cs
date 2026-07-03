@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using AiCodeReviewAgent.Infrastructure.GitHub;
 using AiCodeReviewAgent.Application.Agents;
 using AiCodeReviewAgent.Application.Tools;
+using AiCodeReviewAgent.Application.Configuration;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -25,6 +26,7 @@ builder.Services.AddScoped<IAgentTool, SearchTextTool>();
 builder.Services.AddScoped<ICodeReviewAgent, CodeReviewAgent>();
 builder.Services.AddScoped<IAgentTool, RunBuildTool>();
 builder.Services.AddScoped<IAgentTool, RunTestsTool>();
+builder.Services.AddScoped<IAiReviewConfigurationLoader, AiReviewConfigurationLoader>();
 
 
 using var host = builder.Build();
@@ -44,6 +46,13 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
 
     using var prScope = host.Services.CreateScope();
 
+    var configLoader = prScope.ServiceProvider.GetRequiredService<IAiReviewConfigurationLoader>();
+
+    var workspacePath = Environment.GetEnvironmentVariable("GITHUB_WORKSPACE")
+        ?? Directory.GetCurrentDirectory();
+
+    var config = await configLoader.LoadAsync(workspacePath, CancellationToken.None);
+
     var githubClient = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestClient>();
 
     Console.WriteLine($"Analizando PR #{prNumber} en {repository}...");
@@ -54,12 +63,12 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
             Repository = repository,
             PullRequestNumber = prNumber,
             GitHubToken = githubToken,
-            MaxFiles = 10
+            MaxFiles = config.MaxFiles,
         },
         CancellationToken.None);
 
     Console.WriteLine($"Archivos .cs modificados encontrados: {files.Count}");
-    
+
     var codeReviewAgent = prScope.ServiceProvider.GetRequiredService<ICodeReviewAgent>();
     //var commentClient = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestCommentClient>();
     var commentManager = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestCommentManager>();
@@ -71,8 +80,8 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
     var buildTool = tools.FirstOrDefault(x => x.Name == "run_build");
     var testTool = tools.FirstOrDefault(x => x.Name == "run_tests");
 
-    var workspacePath = Environment.GetEnvironmentVariable("GITHUB_WORKSPACE")
-        ?? Directory.GetCurrentDirectory();
+    /* var workspacePath = Environment.GetEnvironmentVariable("GITHUB_WORKSPACE")
+        ?? Directory.GetCurrentDirectory(); */
 
     var buildResult = buildTool is null
         ? null
@@ -86,6 +95,29 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
         buildResult,
         testResult,
         files.Count);
+
+    if (files.Count == 0)
+    {
+        //var commentManager = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestCommentManager>();
+
+        await commentManager.UpsertCommentAsync(
+            repository,
+            prNumber,
+            githubToken,
+            """
+            ## 🤖 AI Code Review
+
+            No se encontraron archivos `.cs` modificados en este Pull Request.
+
+            ✅ No se ejecutó análisis con IA para evitar consumo innecesario.
+            """,
+            CancellationToken.None);
+
+        Console.WriteLine("No hay archivos .cs modificados. Se publicó comentario informativo.");
+        return;
+    }
+    
+    
 
     prMarkdown.AppendLine("## 🤖 AI Code Review");
     prMarkdown.AppendLine();
@@ -114,6 +146,7 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
                 file.Patch,
                 buildResult,
                 testResult,
+                config.Rules,
                 CancellationToken.None);
 
         prMarkdown.AppendLine($"### `{file.FileName}`");

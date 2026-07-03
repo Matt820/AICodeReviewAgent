@@ -1,0 +1,9 @@
+language: csharp
+max_files: 10
+rules:
+  - Revisar Clean Architecture.
+  - Evitar Console.WriteLine en producción.
+  - Validar uso de CancellationToken en métodos async.
+  - Revisar manejo de errores y excepciones.
+  - Revisar seguridad básica en endpoints y servicios.
+  - Sugerir pruebas unitarias cuando falten.

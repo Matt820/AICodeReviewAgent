@@ -10,6 +10,7 @@ public interface ICodeReviewAgent
         string patch,
         AgentToolResult? buildResult,
         AgentToolResult? testResult,
+        List<string> rules,
         CancellationToken cancellationToken);
 }
 
@@ -32,14 +33,15 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
         string patch,
         AgentToolResult? buildResult,
         AgentToolResult? testResult,
-        CancellationToken cancellationToken)
+        List<string> rules,        CancellationToken cancellationToken)
     {
         var context = new AgentContext
         {
             RepositoryPath = repositoryPath,
             PullRequestDiff = patch,
             BuildResult = buildResult,
-            TestResult = testResult
+            TestResult = testResult,
+            Rules = rules
         };
 
         var readFileTool = _tools.FirstOrDefault(x => x.Name == "read_file");
@@ -140,6 +142,10 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
             {AgentTextLimiter.Limit(context.TestResult.Error)}
             """;
 
+        var rulesContext = context.Rules.Count == 0
+            ? "No se configuraron reglas personalizadas."
+            : string.Join(Environment.NewLine, context.Rules.Select(rule => $"- {rule}"));
+
         return $"""
         Estás actuando como un AI Code Review Agent con herramientas.
 
@@ -159,6 +165,9 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
 
         Contexto obtenido mediante tools del agente:
         {toolContext}
+
+        Reglas configuradas para este repositorio:
+        {rulesContext}
 
         Usa el contexto de las tools para detectar si el cambio afecta otras partes del sistema.
 
