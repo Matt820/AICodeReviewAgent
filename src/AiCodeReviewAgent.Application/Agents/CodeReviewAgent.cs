@@ -113,9 +113,9 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
                 Tool: {x.ToolName}
                 Success: {x.Success}
                 Output:
-                {x.Output}
+                {AgentTextLimiter.Limit(x.Output)}
                 Error:
-                {x.Error}
+                {AgentTextLimiter.Limit(x.Error)}
                 """));
         
         var buildContext = context.BuildResult is null
@@ -124,9 +124,9 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
             Build:
             Success: {context.BuildResult.Success}
             Output:
-            {context.BuildResult.Output}
+            {AgentTextLimiter.Limit(context.BuildResult.Output)}
             Error:
-            {context.BuildResult.Error}
+            {AgentTextLimiter.Limit(context.BuildResult.Error)}
             """;
 
         var testContext = context.TestResult is null
@@ -135,9 +135,9 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
             Tests:
             Success: {context.TestResult.Success}
             Output:
-            {context.TestResult.Output}
+            {AgentTextLimiter.Limit(context.TestResult.Output)}
             Error:
-            {context.TestResult.Error}
+            {AgentTextLimiter.Limit(context.TestResult.Error)}
             """;
 
         return $"""
