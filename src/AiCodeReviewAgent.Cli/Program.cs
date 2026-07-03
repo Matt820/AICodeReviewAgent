@@ -66,12 +66,6 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
 
     var prMarkdown = new System.Text.StringBuilder();
 
-    prMarkdown.AppendLine("## 🤖 AI Code Review");
-    prMarkdown.AppendLine();
-    prMarkdown.AppendLine($"Pull Request: #{prNumber}");
-    prMarkdown.AppendLine($"Archivos `.cs` analizados: {files.Count}");
-    prMarkdown.AppendLine();
-
     var tools = prScope.ServiceProvider.GetServices<IAgentTool>();
 
     var buildTool = tools.FirstOrDefault(x => x.Name == "run_build");
@@ -87,6 +81,20 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
     var testResult = testTool is null
         ? null
         : await testTool.ExecuteAsync(workspacePath, string.Empty, CancellationToken.None);
+
+
+    prMarkdown.AppendLine("## 🤖 AI Code Review");
+    prMarkdown.AppendLine();
+    prMarkdown.AppendLine($"Pull Request: #{prNumber}");
+    prMarkdown.AppendLine($"Archivos `.cs` analizados: {files.Count}");
+    prMarkdown.AppendLine();
+
+    prMarkdown.AppendLine("### Estado del PR");
+    prMarkdown.AppendLine();
+
+    prMarkdown.AppendLine($"- Build: {(buildResult?.Success == true ? "✅ Passed" : "❌ Failed")}");
+    prMarkdown.AppendLine($"- Tests: {(testResult?.Success == true ? "✅ Passed" : "❌ Failed")}");
+    prMarkdown.AppendLine();
 
     foreach (var file in files)
     { 
