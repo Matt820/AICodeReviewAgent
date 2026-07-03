@@ -69,8 +69,24 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
     prMarkdown.AppendLine($"Archivos `.cs` analizados: {files.Count}");
     prMarkdown.AppendLine();
 
+    var tools = prScope.ServiceProvider.GetServices<IAgentTool>();
+
+    var buildTool = tools.FirstOrDefault(x => x.Name == "run_build");
+    var testTool = tools.FirstOrDefault(x => x.Name == "run_tests");
+
+    var workspacePath = Environment.GetEnvironmentVariable("GITHUB_WORKSPACE")
+        ?? Directory.GetCurrentDirectory();
+
+    var buildResult = buildTool is null
+        ? null
+        : await buildTool.ExecuteAsync(workspacePath, string.Empty, CancellationToken.None);
+
+    var testResult = testTool is null
+        ? null
+        : await testTool.ExecuteAsync(workspacePath, string.Empty, CancellationToken.None);
+
     foreach (var file in files)
-    {
+    { 
         if (string.IsNullOrWhiteSpace(file.Patch))
             continue;
         
@@ -78,6 +94,8 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
                 Environment.GetEnvironmentVariable("GITHUB_WORKSPACE") ?? Directory.GetCurrentDirectory(),
                 file.FileName,
                 file.Patch,
+                buildResult,
+                testResult,
                 CancellationToken.None);
 
         prMarkdown.AppendLine($"### `{file.FileName}`");

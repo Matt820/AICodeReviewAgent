@@ -65,8 +65,7 @@ public sealed class OpenAiCodeReviewClient : IAiCodeReviewClient
             content,
             cancellationToken);
 
-        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-        Console.WriteLine("OpenAI API Response:");
+        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);        
 
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException(responseContent);

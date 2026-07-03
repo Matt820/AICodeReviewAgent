@@ -8,6 +8,8 @@ public interface ICodeReviewAgent
         string repositoryPath,
         string changedFilePath,
         string patch,
+        AgentToolResult? buildResult,
+        AgentToolResult? testResult,
         CancellationToken cancellationToken);
 }
 
@@ -28,12 +30,16 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
         string repositoryPath,
         string changedFilePath,
         string patch,
+        AgentToolResult? buildResult,
+        AgentToolResult? testResult,
         CancellationToken cancellationToken)
     {
         var context = new AgentContext
         {
             RepositoryPath = repositoryPath,
-            PullRequestDiff = patch
+            PullRequestDiff = patch,
+            BuildResult = buildResult,
+            TestResult = testResult
         };
 
         var readFileTool = _tools.FirstOrDefault(x => x.Name == "read_file");
@@ -62,7 +68,7 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
             context.ToolResults.Add(result);
         }
 
-        var runBuildTool = _tools.FirstOrDefault(x => x.Name == "run_build");
+        /* var runBuildTool = _tools.FirstOrDefault(x => x.Name == "run_build");
 
         if (runBuildTool is not null)
         {
@@ -84,7 +90,7 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
                 cancellationToken);
 
             context.ToolResults.Add(result);
-        }
+        } */
 
         var prompt = BuildPrompt(changedFilePath, context);
 
@@ -111,6 +117,28 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
                 Error:
                 {x.Error}
                 """));
+        
+        var buildContext = context.BuildResult is null
+            ? "Build no ejecutado."
+            : $"""
+            Build:
+            Success: {context.BuildResult.Success}
+            Output:
+            {context.BuildResult.Output}
+            Error:
+            {context.BuildResult.Error}
+            """;
+
+        var testContext = context.TestResult is null
+            ? "Tests no ejecutados."
+            : $"""
+            Tests:
+            Success: {context.TestResult.Success}
+            Output:
+            {context.TestResult.Output}
+            Error:
+            {context.TestResult.Error}
+            """;
 
         return $"""
         Estás actuando como un AI Code Review Agent con herramientas.
@@ -120,8 +148,14 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
 
         Diff del Pull Request:
         ```diff
-        {context.PullRequestDiff}
+        {context.PullRequestDiff}        
         ```
+
+        Resultado del build:
+        {buildContext}
+
+        Resultado de tests:
+        {testContext}
 
         Contexto obtenido mediante tools del agente:
         {toolContext}
