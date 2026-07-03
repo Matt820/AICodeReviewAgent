@@ -82,6 +82,10 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
         ? null
         : await testTool.ExecuteAsync(workspacePath, string.Empty, CancellationToken.None);
 
+    var reviewScore = ReviewScoreCalculator.Calculate(
+        buildResult,
+        testResult,
+        files.Count);
 
     prMarkdown.AppendLine("## 🤖 AI Code Review");
     prMarkdown.AppendLine();
@@ -90,6 +94,9 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
     prMarkdown.AppendLine();
 
     prMarkdown.AppendLine("### Estado del PR");
+    prMarkdown.AppendLine();
+
+    prMarkdown.AppendLine($"**Review Score:** {reviewScore}/100");
     prMarkdown.AppendLine();
 
     prMarkdown.AppendLine($"- Build: {(buildResult?.Success == true ? "✅ Passed" : "❌ Failed")}");

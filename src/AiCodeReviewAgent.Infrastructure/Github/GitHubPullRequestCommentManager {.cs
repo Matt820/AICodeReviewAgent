@@ -34,7 +34,7 @@ public sealed class GitHubPullRequestCommentManager : IGitHubPullRequestCommentM
 
         using var document = JsonDocument.Parse(listContent);
 
-        int? existingCommentId = null;
+        long? existingCommentId = null;
 
         foreach (var comment in document.RootElement.EnumerateArray())
         {
@@ -42,7 +42,7 @@ public sealed class GitHubPullRequestCommentManager : IGitHubPullRequestCommentM
 
             if (commentBody.Contains(Marker, StringComparison.OrdinalIgnoreCase))
             {
-                existingCommentId = comment.GetProperty("id").GetInt32();
+                existingCommentId = comment.GetProperty("id").GetInt64();
                 break;
             }
         }
@@ -91,7 +91,7 @@ public sealed class GitHubPullRequestCommentManager : IGitHubPullRequestCommentM
 
     private async Task UpdateCommentAsync(
         string repository,
-        int commentId,
+        long commentId,
         string body,
         CancellationToken cancellationToken)
     {
