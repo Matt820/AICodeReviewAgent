@@ -13,6 +13,7 @@ builder.Configuration.AddUserSecrets<Program>();
 
 builder.Services.AddHttpClient<IAiCodeReviewClient, OpenAiCodeReviewClient>();
 builder.Services.AddHttpClient<IGitHubPullRequestClient, GitHubPullRequestClient>();
+builder.Services.AddHttpClient<IGitHubPullRequestCommentClient, GitHubPullRequestCommentClient>();
 
 builder.Services.AddScoped<IAiRepositoryAnalysisService, AiRepositoryAnalysisService>();
 builder.Services.AddScoped<IAiMarkdownReportService, AiMarkdownReportService>();
@@ -49,6 +50,48 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
         CancellationToken.None);
 
     Console.WriteLine($"Archivos .cs modificados encontrados: {files.Count}");
+
+    var aiClient = prScope.ServiceProvider.GetRequiredService<IAiCodeReviewClient>();
+    var commentClient = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestCommentClient>();
+
+    var prMarkdown = new System.Text.StringBuilder();
+
+    prMarkdown.AppendLine("## 🤖 AI Code Review");
+    prMarkdown.AppendLine();
+    prMarkdown.AppendLine($"Pull Request: #{prNumber}");
+    prMarkdown.AppendLine($"Archivos `.cs` analizados: {files.Count}");
+    prMarkdown.AppendLine();
+
+    foreach (var file in files)
+    {
+        if (string.IsNullOrWhiteSpace(file.Patch))
+            continue;
+
+        var review = await aiClient.AnalyzeCodeAsync(
+            new AnalyzeCodeRequest
+            {
+                FileName = file.FileName,
+                Language = "diff",
+                Code = file.Patch
+            },
+            CancellationToken.None);
+
+        prMarkdown.AppendLine($"### `{file.FileName}`");
+        prMarkdown.AppendLine();
+        prMarkdown.AppendLine(review);
+        prMarkdown.AppendLine();
+        prMarkdown.AppendLine("---");
+        prMarkdown.AppendLine();
+    }
+
+    await commentClient.CreateCommentAsync(
+        repository,
+        prNumber,
+        githubToken,
+        prMarkdown.ToString(),
+        CancellationToken.None);
+
+    Console.WriteLine("Comentario publicado en el Pull Request.");
 
     foreach (var file in files)
     {
