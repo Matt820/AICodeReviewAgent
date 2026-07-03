@@ -31,5 +31,6 @@ jobs:
       - name: Analyze Pull Request
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OpenAI__ApiKey: ${{ secrets.OPENAI_API_KEY }}
         run: |
           dotnet run --project src/AiCodeReviewAgent.Cli --configuration Release -- analyze-pr
