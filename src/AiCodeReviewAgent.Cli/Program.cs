@@ -22,6 +22,7 @@ builder.Services.AddScoped<IAiMarkdownReportService, AiMarkdownReportService>();
 builder.Services.AddScoped<IAgentTool, ReadFileTool>();
 builder.Services.AddScoped<IAgentTool, SearchTextTool>();
 builder.Services.AddScoped<ICodeReviewAgent, CodeReviewAgent>();
+builder.Services.AddScoped<IAgentTool, RunBuildTool>();
 
 using var host = builder.Build();
 
@@ -55,8 +56,7 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
         CancellationToken.None);
 
     Console.WriteLine($"Archivos .cs modificados encontrados: {files.Count}");
-
-    //var aiClient = prScope.ServiceProvider.GetRequiredService<IAiCodeReviewClient>();
+    
     var codeReviewAgent = prScope.ServiceProvider.GetRequiredService<ICodeReviewAgent>();
     var commentClient = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestCommentClient>();
 
@@ -72,15 +72,7 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
     {
         if (string.IsNullOrWhiteSpace(file.Patch))
             continue;
-
-        /* var review = await aiClient.AnalyzeCodeAsync(
-            new AnalyzeCodeRequest
-            {
-                FileName = file.FileName,
-                Language = "diff",
-                Code = file.Patch
-            },
-            CancellationToken.None); */
+        
             var review = await codeReviewAgent.ReviewPullRequestAsync(
                 Environment.GetEnvironmentVariable("GITHUB_WORKSPACE") ?? Directory.GetCurrentDirectory(),
                 file.FileName,

@@ -62,6 +62,18 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
             context.ToolResults.Add(result);
         }
 
+        var runBuildTool = _tools.FirstOrDefault(x => x.Name == "run_build");
+
+        if (runBuildTool is not null)
+        {
+            var result = await runBuildTool.ExecuteAsync(
+                repositoryPath,
+                string.Empty,
+                cancellationToken);
+
+            context.ToolResults.Add(result);
+        }
+
         var prompt = BuildPrompt(changedFilePath, context);
 
         return await _aiClient.AnalyzeCodeAsync(

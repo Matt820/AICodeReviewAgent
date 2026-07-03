@@ -33,10 +33,6 @@ namespace AiCodeReviewAgent.Api.Controllers
             CancellationToken cancellationToken)
         {
             var result = await _aiCodeReviewClient.AnalyzeCodeAsync(request, cancellationToken);
-            Console.WriteLine($"AI Review Result: test PR review");
-            Console.WriteLine($"AI Review Result: test PR review");
-            Console.WriteLine($"AI Review Result: test PR review");
-
             return Ok(new
             {
                 fileName = request.FileName,
