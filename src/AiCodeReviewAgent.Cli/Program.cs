@@ -27,6 +27,7 @@ builder.Services.AddScoped<ICodeReviewAgent, CodeReviewAgent>();
 builder.Services.AddScoped<IAgentTool, RunBuildTool>();
 builder.Services.AddScoped<IAgentTool, RunTestsTool>();
 builder.Services.AddScoped<IAiReviewConfigurationLoader, AiReviewConfigurationLoader>();
+builder.Services.AddScoped<IPullRequestSummaryAgent, PullRequestSummaryAgent>();
 
 
 using var host = builder.Build();
@@ -125,6 +126,22 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
     prMarkdown.AppendLine($"Archivos `.cs` analizados: {files.Count}");
     prMarkdown.AppendLine();
 
+    prMarkdown.AppendLine("### Configuración del agente");
+    prMarkdown.AppendLine();
+    prMarkdown.AppendLine($"- Lenguaje: `{config.Language}`");
+    prMarkdown.AppendLine($"- Máximo de archivos: `{config.MaxFiles}`");
+
+    if (config.Rules.Count > 0)
+    {
+        prMarkdown.AppendLine("- Reglas activas:");
+        foreach (var rule in config.Rules)
+        {
+            prMarkdown.AppendLine($"  - {rule}");
+        }
+    }
+
+    prMarkdown.AppendLine();
+
     prMarkdown.AppendLine("### Estado del PR");
     prMarkdown.AppendLine();
 
@@ -134,6 +151,8 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
     prMarkdown.AppendLine($"- Build: {(buildResult?.Success == true ? "✅ Passed" : "❌ Failed")}");
     prMarkdown.AppendLine($"- Tests: {(testResult?.Success == true ? "✅ Passed" : "❌ Failed")}");
     prMarkdown.AppendLine();
+
+    var reviewsMarkdown = new System.Text.StringBuilder();
 
     foreach (var file in files)
     { 
@@ -149,6 +168,11 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
                 config.Rules,
                 CancellationToken.None);
 
+        reviewsMarkdown.AppendLine($"### `{file.FileName}`");
+        reviewsMarkdown.AppendLine();
+        reviewsMarkdown.AppendLine(review);
+        reviewsMarkdown.AppendLine();
+
         prMarkdown.AppendLine($"### `{file.FileName}`");
         prMarkdown.AppendLine();
         prMarkdown.AppendLine(review);
@@ -156,6 +180,27 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
         prMarkdown.AppendLine("---");
         prMarkdown.AppendLine();
     }
+
+    var summaryAgent = prScope.ServiceProvider.GetRequiredService<IPullRequestSummaryAgent>();
+
+    var executiveSummary = await summaryAgent.GenerateSummaryAsync(
+        new PullRequestReviewSummaryRequest
+        {
+            PullRequestNumber = prNumber,
+            FilesReviewed = files.Count,
+            ReviewScore = reviewScore,
+            BuildPassed = buildResult?.Success == true,
+            TestsPassed = testResult?.Success == true,
+            ReviewsMarkdown = reviewsMarkdown.ToString()
+        },
+        CancellationToken.None);
+
+    prMarkdown.AppendLine("## Resumen ejecutivo");
+    prMarkdown.AppendLine();
+    prMarkdown.AppendLine(executiveSummary);
+    prMarkdown.AppendLine();
+    prMarkdown.AppendLine("---");
+    prMarkdown.AppendLine();
 
     await commentManager.UpsertCommentAsync(
         repository,
