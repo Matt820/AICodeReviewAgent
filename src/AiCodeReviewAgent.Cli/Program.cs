@@ -23,6 +23,7 @@ builder.Services.AddScoped<IAgentTool, ReadFileTool>();
 builder.Services.AddScoped<IAgentTool, SearchTextTool>();
 builder.Services.AddScoped<ICodeReviewAgent, CodeReviewAgent>();
 builder.Services.AddScoped<IAgentTool, RunBuildTool>();
+builder.Services.AddScoped<IAgentTool, RunTestsTool>();
 
 using var host = builder.Build();
 
