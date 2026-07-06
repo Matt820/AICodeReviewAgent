@@ -9,6 +9,10 @@ using AiCodeReviewAgent.Infrastructure.GitHub;
 using AiCodeReviewAgent.Application.Agents;
 using AiCodeReviewAgent.Application.Tools;
 using AiCodeReviewAgent.Application.Configuration;
+using AiCodeReviewAgent.Application.Agents.Orchestration;
+using AiCodeReviewAgent.Application.Agents.Planning;
+using AiCodeReviewAgent.Application.Agents.Tools;
+using AiCodeReviewAgent.Application.PullRequests;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -28,6 +32,13 @@ builder.Services.AddScoped<IAgentTool, RunBuildTool>();
 builder.Services.AddScoped<IAgentTool, RunTestsTool>();
 builder.Services.AddScoped<IAiReviewConfigurationLoader, AiReviewConfigurationLoader>();
 builder.Services.AddScoped<IPullRequestSummaryAgent, PullRequestSummaryAgent>();
+builder.Services.AddScoped<IAgentPlanner, HeuristicAgentPlanner>();
+builder.Services.AddScoped<IAgentOrchestrator, AgentOrchestrator>();
+builder.Services.AddScoped<IAgentToolRegistry, AgentToolRegistry>();
+builder.Services.AddScoped<IPullRequestReviewWorkflow, PullRequestReviewWorkflow>();
+
+
+
 
 
 using var host = builder.Build();
@@ -43,178 +54,23 @@ if (args.Length >= 1 && args[0] == "analyze-pr")
     if (string.IsNullOrWhiteSpace(githubToken))
         throw new InvalidOperationException("No se encontró GITHUB_TOKEN.");
 
-    var prNumber = GitHubEventReader.GetPullRequestNumber();
-
-    using var prScope = host.Services.CreateScope();
-
-    var configLoader = prScope.ServiceProvider.GetRequiredService<IAiReviewConfigurationLoader>();
-
     var workspacePath = Environment.GetEnvironmentVariable("GITHUB_WORKSPACE")
         ?? Directory.GetCurrentDirectory();
 
-    var config = await configLoader.LoadAsync(workspacePath, CancellationToken.None);
+    using var prScope = host.Services.CreateScope();
 
-    var githubClient = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestClient>();
+    var workflow = prScope.ServiceProvider
+        .GetRequiredService<IPullRequestReviewWorkflow>();
 
-    Console.WriteLine($"Analizando PR #{prNumber} en {repository}...");
-
-    var files = await githubClient.GetChangedFilesAsync(
-        new PullRequestAnalysisRequest
+    await workflow.ExecuteAsync(
+        new PullRequestReviewWorkflowRequest
         {
             Repository = repository,
-            PullRequestNumber = prNumber,
             GitHubToken = githubToken,
-            MaxFiles = config.MaxFiles,
+            PullRequestNumber = GitHubEventReader.GetPullRequestNumber(),
+            WorkspacePath = workspacePath
         },
         CancellationToken.None);
-
-    Console.WriteLine($"Archivos .cs modificados encontrados: {files.Count}");
-
-    var codeReviewAgent = prScope.ServiceProvider.GetRequiredService<ICodeReviewAgent>();
-    //var commentClient = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestCommentClient>();
-    var commentManager = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestCommentManager>();
-
-    var prMarkdown = new System.Text.StringBuilder();
-
-    var tools = prScope.ServiceProvider.GetServices<IAgentTool>();
-
-    var buildTool = tools.FirstOrDefault(x => x.Name == "run_build");
-    var testTool = tools.FirstOrDefault(x => x.Name == "run_tests");
-
-    /* var workspacePath = Environment.GetEnvironmentVariable("GITHUB_WORKSPACE")
-        ?? Directory.GetCurrentDirectory(); */
-
-    var buildResult = buildTool is null
-        ? null
-        : await buildTool.ExecuteAsync(workspacePath, string.Empty, CancellationToken.None);
-
-    var testResult = testTool is null
-        ? null
-        : await testTool.ExecuteAsync(workspacePath, string.Empty, CancellationToken.None);
-
-    var reviewScore = ReviewScoreCalculator.Calculate(
-        buildResult,
-        testResult,
-        files.Count);
-
-    if (files.Count == 0)
-    {
-        //var commentManager = prScope.ServiceProvider.GetRequiredService<IGitHubPullRequestCommentManager>();
-
-        await commentManager.UpsertCommentAsync(
-            repository,
-            prNumber,
-            githubToken,
-            """
-            ## 🤖 AI Code Review
-
-            No se encontraron archivos `.cs` modificados en este Pull Request.
-
-            ✅ No se ejecutó análisis con IA para evitar consumo innecesario.
-            """,
-            CancellationToken.None);
-
-        Console.WriteLine("No hay archivos .cs modificados. Se publicó comentario informativo.");
-        return;
-    }
-    
-    
-
-    prMarkdown.AppendLine("## 🤖 AI Code Review");
-    prMarkdown.AppendLine();
-    prMarkdown.AppendLine($"Pull Request: #{prNumber}");
-    prMarkdown.AppendLine($"Archivos `.cs` analizados: {files.Count}");
-    prMarkdown.AppendLine();
-
-    prMarkdown.AppendLine("### Configuración del agente");
-    prMarkdown.AppendLine();
-    prMarkdown.AppendLine($"- Lenguaje: `{config.Language}`");
-    prMarkdown.AppendLine($"- Máximo de archivos: `{config.MaxFiles}`");
-
-    if (config.Rules.Count > 0)
-    {
-        prMarkdown.AppendLine("- Reglas activas:");
-        foreach (var rule in config.Rules)
-        {
-            prMarkdown.AppendLine($"  - {rule}");
-        }
-    }
-
-    prMarkdown.AppendLine();
-
-    prMarkdown.AppendLine("### Estado del PR");
-    prMarkdown.AppendLine();
-
-    prMarkdown.AppendLine($"**Review Score:** {reviewScore}/100");
-    prMarkdown.AppendLine();
-
-    prMarkdown.AppendLine($"- Build: {(buildResult?.Success == true ? "✅ Passed" : "❌ Failed")}");
-    prMarkdown.AppendLine($"- Tests: {(testResult?.Success == true ? "✅ Passed" : "❌ Failed")}");
-    prMarkdown.AppendLine();
-
-    var reviewsMarkdown = new System.Text.StringBuilder();
-
-    foreach (var file in files)
-    { 
-        if (string.IsNullOrWhiteSpace(file.Patch))
-            continue;
-        
-            var review = await codeReviewAgent.ReviewPullRequestAsync(
-                Environment.GetEnvironmentVariable("GITHUB_WORKSPACE") ?? Directory.GetCurrentDirectory(),
-                file.FileName,
-                file.Patch,
-                buildResult,
-                testResult,
-                config.Rules,
-                CancellationToken.None);
-
-        reviewsMarkdown.AppendLine($"### `{file.FileName}`");
-        reviewsMarkdown.AppendLine();
-        reviewsMarkdown.AppendLine(review);
-        reviewsMarkdown.AppendLine();
-
-        prMarkdown.AppendLine($"### `{file.FileName}`");
-        prMarkdown.AppendLine();
-        prMarkdown.AppendLine(review);
-        prMarkdown.AppendLine();
-        prMarkdown.AppendLine("---");
-        prMarkdown.AppendLine();
-    }
-
-    var summaryAgent = prScope.ServiceProvider.GetRequiredService<IPullRequestSummaryAgent>();
-
-    var executiveSummary = await summaryAgent.GenerateSummaryAsync(
-        new PullRequestReviewSummaryRequest
-        {
-            PullRequestNumber = prNumber,
-            FilesReviewed = files.Count,
-            ReviewScore = reviewScore,
-            BuildPassed = buildResult?.Success == true,
-            TestsPassed = testResult?.Success == true,
-            ReviewsMarkdown = reviewsMarkdown.ToString()
-        },
-        CancellationToken.None);
-
-    prMarkdown.AppendLine("## Resumen ejecutivo");
-    prMarkdown.AppendLine();
-    prMarkdown.AppendLine(executiveSummary);
-    prMarkdown.AppendLine();
-    prMarkdown.AppendLine("---");
-    prMarkdown.AppendLine();
-
-    await commentManager.UpsertCommentAsync(
-        repository,
-        prNumber,
-        githubToken,
-        prMarkdown.ToString(),
-        CancellationToken.None);
-
-    Console.WriteLine("Comentario publicado en el Pull Request.");
-
-    foreach (var file in files)
-    {
-        Console.WriteLine($"- {file.FileName} ({file.Status})");
-    }
 
     return;
 }
