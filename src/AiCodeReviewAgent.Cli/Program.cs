@@ -34,12 +34,14 @@ builder.Services.AddScoped<IAgentTool, RunBuildTool>();
 builder.Services.AddScoped<IAgentTool, RunTestsTool>();
 builder.Services.AddScoped<IAiReviewConfigurationLoader, AiReviewConfigurationLoader>();
 builder.Services.AddScoped<IPullRequestSummaryAgent, PullRequestSummaryAgent>();
-builder.Services.AddScoped<IAgentPlanner, HeuristicAgentPlanner>();
+//builder.Services.AddScoped<IAgentPlanner, HeuristicAgentPlanner>();
 builder.Services.AddScoped<IAgentOrchestrator, AgentOrchestrator>();
 builder.Services.AddScoped<IAgentToolRegistry, AgentToolRegistry>();
 builder.Services.AddScoped<IPullRequestReviewWorkflow, PullRequestReviewWorkflow>();
 builder.Services.AddScoped<IAgentToolExecutor, AgentToolExecutor>();
 builder.Services.AddScoped<ICodeReviewPromptBuilder, CodeReviewPromptBuilder>();
+builder.Services.AddScoped<HeuristicAgentPlanner>();
+builder.Services.AddScoped<IAgentPlanner, LlmAgentPlanner>();
 
 
 
