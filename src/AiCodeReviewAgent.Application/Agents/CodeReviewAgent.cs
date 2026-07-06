@@ -1,4 +1,6 @@
 using AiCodeReviewAgent.Application.Reviews;
+using AiCodeReviewAgent.Application.Agents.Orchestration;
+using AiCodeReviewAgent.Application.Agents.Prompts;
 
 namespace AiCodeReviewAgent.Application.Agents;
 
@@ -16,14 +18,20 @@ public interface ICodeReviewAgent
 
 public sealed class CodeReviewAgent : ICodeReviewAgent
 {
-    private readonly IEnumerable<IAgentTool> _tools;
+    //private readonly IEnumerable<IAgentTool> _tools;
     private readonly IAiCodeReviewClient _aiClient;
+    private readonly IAgentOrchestrator _orchestrator;
+    private readonly ICodeReviewPromptBuilder _promptBuilder;
 
     public CodeReviewAgent(
-        IEnumerable<IAgentTool> tools,
+        //IEnumerable<IAgentTool> tools,
+        IAgentOrchestrator orchestrator,
+        ICodeReviewPromptBuilder promptBuilder,
         IAiCodeReviewClient aiClient)
     {
-        _tools = tools;
+        //_tools = tools;
+        _orchestrator = orchestrator;
+        _promptBuilder = promptBuilder;
         _aiClient = aiClient;
     }
 
@@ -33,7 +41,8 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
         string patch,
         AgentToolResult? buildResult,
         AgentToolResult? testResult,
-        List<string> rules,        CancellationToken cancellationToken)
+        List<string> rules,        
+        CancellationToken cancellationToken)
     {
         var context = new AgentContext
         {
@@ -44,57 +53,16 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
             Rules = rules
         };
 
-        var readFileTool = _tools.FirstOrDefault(x => x.Name == "read_file");
+        await _orchestrator.ExecuteAsync(
+            context,
+            cancellationToken);
 
-        if (readFileTool is not null)
-        {
-            var result = await readFileTool.ExecuteAsync(
-                repositoryPath,
-                changedFilePath,
-                cancellationToken);
-
-            context.ToolResults.Add(result);
-        }
-
-        var searchTextTool = _tools.FirstOrDefault(x => x.Name == "search_text");
-
-        if (searchTextTool is not null)
-        {
-            var className = Path.GetFileNameWithoutExtension(changedFilePath);
-
-            var result = await searchTextTool.ExecuteAsync(
-                repositoryPath,
-                className,
-                cancellationToken);
-
-            context.ToolResults.Add(result);
-        }
-
-        /* var runBuildTool = _tools.FirstOrDefault(x => x.Name == "run_build");
-
-        if (runBuildTool is not null)
-        {
-            var result = await runBuildTool.ExecuteAsync(
-                repositoryPath,
-                string.Empty,
-                cancellationToken);
-
-            context.ToolResults.Add(result);
-        }
-
-        var runTestsTool = _tools.FirstOrDefault(x => x.Name == "run_tests");
-
-        if (runTestsTool is not null)
-        {
-            var result = await runTestsTool.ExecuteAsync(
-                repositoryPath,
-                string.Empty,
-                cancellationToken);
-
-            context.ToolResults.Add(result);
-        } */
-
-        var prompt = BuildPrompt(changedFilePath, context);
+        var prompt = _promptBuilder.Build(
+            new CodeReviewPromptContext
+            {
+                ChangedFilePath = changedFilePath,
+                AgentContext = context
+            });   
 
         return await _aiClient.AnalyzeCodeAsync(
             new AnalyzeCodeRequest

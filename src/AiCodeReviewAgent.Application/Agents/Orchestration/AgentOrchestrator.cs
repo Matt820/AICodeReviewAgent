@@ -1,19 +1,19 @@
+using AiCodeReviewAgent.Application.Agents.Execution;
 using AiCodeReviewAgent.Application.Agents.Planning;
-using AiCodeReviewAgent.Application.Agents.Tools;
 
 namespace AiCodeReviewAgent.Application.Agents.Orchestration;
 
 public sealed class AgentOrchestrator : IAgentOrchestrator
 {
     private readonly IAgentPlanner _planner;
-    private readonly IAgentToolRegistry _toolRegistry;
+    private readonly IAgentToolExecutor _toolExecutor;
 
     public AgentOrchestrator(
         IAgentPlanner planner,
-        IAgentToolRegistry toolRegistry)
+        IAgentToolExecutor toolExecutor)
     {
         _planner = planner;
-        _toolRegistry = toolRegistry;
+        _toolExecutor = toolExecutor;
     }
 
     public async Task<AgentExecutionResult> ExecuteAsync(
@@ -26,11 +26,9 @@ public sealed class AgentOrchestrator : IAgentOrchestrator
 
         foreach (var step in plan.Steps)
         {
-            var tool = _toolRegistry.GetRequiredTool(step.ToolName);
-
-            var result = await tool.ExecuteAsync(
-                context.RepositoryPath,
-                step.Input,
+            var result = await _toolExecutor.ExecuteAsync(
+                step,
+                context,
                 cancellationToken);
 
             results.Add(result);

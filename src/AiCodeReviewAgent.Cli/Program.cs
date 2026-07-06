@@ -13,6 +13,8 @@ using AiCodeReviewAgent.Application.Agents.Orchestration;
 using AiCodeReviewAgent.Application.Agents.Planning;
 using AiCodeReviewAgent.Application.Agents.Tools;
 using AiCodeReviewAgent.Application.PullRequests;
+using AiCodeReviewAgent.Application.Agents.Execution;
+using AiCodeReviewAgent.Application.Agents.Prompts;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -36,6 +38,8 @@ builder.Services.AddScoped<IAgentPlanner, HeuristicAgentPlanner>();
 builder.Services.AddScoped<IAgentOrchestrator, AgentOrchestrator>();
 builder.Services.AddScoped<IAgentToolRegistry, AgentToolRegistry>();
 builder.Services.AddScoped<IPullRequestReviewWorkflow, PullRequestReviewWorkflow>();
+builder.Services.AddScoped<IAgentToolExecutor, AgentToolExecutor>();
+builder.Services.AddScoped<ICodeReviewPromptBuilder, CodeReviewPromptBuilder>();
 
 
 
