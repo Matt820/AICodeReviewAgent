@@ -17,6 +17,7 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
     private readonly IPullRequestSummaryAgent _summaryAgent;
     private readonly IEnumerable<IAgentTool> _tools;
     private readonly AiUsageMetrics _usageMetrics;
+    private readonly AiBudgetOptions _budgetOptions;
 
     public PullRequestReviewWorkflow(
         IAiReviewConfigurationLoader configLoader,
@@ -25,7 +26,8 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
         ICodeReviewAgent codeReviewAgent,
         IPullRequestSummaryAgent summaryAgent,
         IEnumerable<IAgentTool> tools,
-        AiUsageMetrics usageMetrics)
+        AiUsageMetrics usageMetrics,
+        AiBudgetOptions budgetOptions)
     {
         _configLoader = configLoader;
         _githubClient = githubClient;
@@ -34,6 +36,7 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
         _summaryAgent = summaryAgent;
         _tools = tools;
         _usageMetrics = usageMetrics;
+        _budgetOptions = budgetOptions;
     }
 
     public async Task ExecuteAsync(
@@ -43,6 +46,9 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
         var config = await _configLoader.LoadAsync(
             request.WorkspacePath,
             cancellationToken);
+        
+        _budgetOptions.MaxAiCalls = config.Budget.MaxAiCalls;
+        _budgetOptions.MaxEstimatedTokens = config.Budget.MaxEstimatedTokens;
 
         Console.WriteLine($"Analizando PR #{request.PullRequestNumber} en {request.Repository}...");
 

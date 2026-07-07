@@ -6,6 +6,10 @@ features:
   rag: false
   specialized_agents: false
 
+budget:
+  max_ai_calls: 10
+  max_estimated_tokens: 30000
+
 rules:
   - Revisar Clean Architecture.
   - Evitar Console.WriteLine en producción.

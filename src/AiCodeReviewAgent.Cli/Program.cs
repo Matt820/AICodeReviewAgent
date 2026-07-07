@@ -34,8 +34,8 @@ builder.Services.AddScoped<IAiCodeReviewClient>(sp =>
 {
     var inner = sp.GetRequiredService<OpenAiCodeReviewClient>();
     var metrics = sp.GetRequiredService<AiUsageMetrics>();
-
-    return new MeteredAiCodeReviewClient(inner, metrics);
+    var budgetGuard = sp.GetRequiredService<IAiBudgetGuard>();
+    return new MeteredAiCodeReviewClient(inner, metrics, budgetGuard);
 });
 
 builder.Services.AddHttpClient<IGitHubPullRequestClient, GitHubPullRequestClient>();
@@ -69,6 +69,9 @@ builder.Services.AddScoped<RepositoryRagContextBuilder>();
 builder.Services.AddScoped<SpecializedReviewOrchestrator>();
 builder.Services.AddScoped<ISpecializedReviewAgent, SecurityReviewAgent>();
 builder.Services.AddScoped<ISpecializedReviewAgent, TestingReviewAgent>();
+builder.Services.AddScoped<AiBudgetOptions>();
+builder.Services.AddScoped<IAiBudgetGuard, AiBudgetGuard>();
+builder.Services.AddScoped<AiUsageMetrics>();
 
 
 
