@@ -70,6 +70,22 @@ public sealed class LlmAgentPlanner : IAgentPlanner
         - Busca referencias de un texto dentro del repositorio.
         - Input esperado: texto a buscar, por ejemplo nombre de clase, interfaz o método.
 
+        3. read_solution
+        - Lee la solución .sln para entender estructura de proyectos.
+        - Input esperado: vacío.
+
+        4. read_project_file
+        - Lee archivos .csproj para entender dependencias.
+        - Input esperado: vacío.
+
+        5. find_class
+        - Busca la definición de una clase.
+        - Input esperado: nombre exacto de la clase.
+
+        6. find_interface
+        - Busca la definición de una interfaz.
+        - Input esperado: nombre exacto de la interfaz.
+
         Reglas:
         - Devuelve SOLO JSON válido.
         - No incluyas Markdown.
@@ -116,8 +132,19 @@ public sealed class LlmAgentPlanner : IAgentPlanner
             return new AgentPlan();
         }
 
-        var allowedTools = new HashSet<string>(
+        /* var allowedTools = new HashSet<string>(
             ["read_file", "search_text"],
+            StringComparer.OrdinalIgnoreCase); */
+        
+        var allowedTools = new HashSet<string>(
+            [
+                "read_file",
+                "search_text",
+                "read_solution",
+                "read_project_file",
+                "find_class",
+                "find_interface"
+            ],
             StringComparer.OrdinalIgnoreCase);
 
         var steps = parsed.Steps

@@ -42,6 +42,10 @@ builder.Services.AddScoped<IAgentToolExecutor, AgentToolExecutor>();
 builder.Services.AddScoped<ICodeReviewPromptBuilder, CodeReviewPromptBuilder>();
 builder.Services.AddScoped<HeuristicAgentPlanner>();
 builder.Services.AddScoped<IAgentPlanner, LlmAgentPlanner>();
+builder.Services.AddScoped<IAgentTool, ReadSolutionTool>();
+builder.Services.AddScoped<IAgentTool, ReadProjectFileTool>();
+builder.Services.AddScoped<IAgentTool, FindClassTool>();
+builder.Services.AddScoped<IAgentTool, FindInterfaceTool>();
 
 
 
