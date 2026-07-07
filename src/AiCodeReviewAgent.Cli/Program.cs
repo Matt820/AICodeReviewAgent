@@ -18,12 +18,26 @@ using AiCodeReviewAgent.Application.Agents.Execution;
 using AiCodeReviewAgent.Application.Agents.Prompts;
 using AiCodeReviewAgent.Application.Rag;
 using AiCodeReviewAgent.Infrastructure.Rag;
+using AiCodeReviewAgent.Application.Observability;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Configuration.AddUserSecrets<Program>();
 
-builder.Services.AddHttpClient<IAiCodeReviewClient, OpenAiCodeReviewClient>();
+//builder.Services.AddHttpClient<IAiCodeReviewClient, OpenAiCodeReviewClient>();
+
+builder.Services.AddScoped<AiUsageMetrics>();
+
+builder.Services.AddHttpClient<OpenAiCodeReviewClient>();
+
+builder.Services.AddScoped<IAiCodeReviewClient>(sp =>
+{
+    var inner = sp.GetRequiredService<OpenAiCodeReviewClient>();
+    var metrics = sp.GetRequiredService<AiUsageMetrics>();
+
+    return new MeteredAiCodeReviewClient(inner, metrics);
+});
+
 builder.Services.AddHttpClient<IGitHubPullRequestClient, GitHubPullRequestClient>();
 builder.Services.AddHttpClient<IGitHubPullRequestCommentClient, GitHubPullRequestCommentClient>();
 builder.Services.AddHttpClient<IGitHubPullRequestCommentManager, GitHubPullRequestCommentManager>();

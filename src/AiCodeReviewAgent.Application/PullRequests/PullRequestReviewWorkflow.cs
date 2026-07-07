@@ -1,6 +1,7 @@
 using System.Text;
 using AiCodeReviewAgent.Application.Agents;
 using AiCodeReviewAgent.Application.Configuration;
+using AiCodeReviewAgent.Application.Observability;
 using AiCodeReviewAgent.Application.Repositories;
 using AiCodeReviewAgent.Application.Reviews;
 using AiCodeReviewAgent.Application.Tools;
@@ -15,6 +16,7 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
     private readonly ICodeReviewAgent _codeReviewAgent;
     private readonly IPullRequestSummaryAgent _summaryAgent;
     private readonly IEnumerable<IAgentTool> _tools;
+    private readonly AiUsageMetrics _usageMetrics;
 
     public PullRequestReviewWorkflow(
         IAiReviewConfigurationLoader configLoader,
@@ -22,7 +24,8 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
         IGitHubPullRequestCommentManager commentManager,
         ICodeReviewAgent codeReviewAgent,
         IPullRequestSummaryAgent summaryAgent,
-        IEnumerable<IAgentTool> tools)
+        IEnumerable<IAgentTool> tools,
+        AiUsageMetrics usageMetrics)
     {
         _configLoader = configLoader;
         _githubClient = githubClient;
@@ -30,6 +33,7 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
         _codeReviewAgent = codeReviewAgent;
         _summaryAgent = summaryAgent;
         _tools = tools;
+        _usageMetrics = usageMetrics;
     }
 
     public async Task ExecuteAsync(
@@ -132,6 +136,8 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
             prMarkdown.AppendLine();
         }
 
+        AppendUsageMetrics(prMarkdown, _usageMetrics);
+
         var executiveSummary = await _summaryAgent.GenerateSummaryAsync(
             new PullRequestReviewSummaryRequest
             {
@@ -223,6 +229,22 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
         prMarkdown.AppendLine();
         prMarkdown.AppendLine($"- Build: {(buildResult?.Success == true ? "✅ Passed" : "❌ Failed")}");
         prMarkdown.AppendLine($"- Tests: {(testResult?.Success == true ? "✅ Passed" : "❌ Failed")}");
+        prMarkdown.AppendLine();
+    }
+    private static void AppendUsageMetrics(
+        StringBuilder prMarkdown,
+        AiUsageMetrics metrics)
+    {
+        prMarkdown.AppendLine("## Uso estimado de IA");
+        prMarkdown.AppendLine();
+        prMarkdown.AppendLine($"- Llamadas IA: `{metrics.AiCalls}`");
+        prMarkdown.AppendLine($"- Input tokens estimados: `{metrics.EstimatedInputTokens}`");
+        prMarkdown.AppendLine($"- Output tokens estimados: `{metrics.EstimatedOutputTokens}`");
+        prMarkdown.AppendLine($"- Total tokens estimados: `{metrics.EstimatedTotalTokens}`");
+        prMarkdown.AppendLine();
+        prMarkdown.AppendLine("> Estimación aproximada usando 1 token ≈ 4 caracteres.");
+        prMarkdown.AppendLine();
+        prMarkdown.AppendLine("---");
         prMarkdown.AppendLine();
     }
 }
