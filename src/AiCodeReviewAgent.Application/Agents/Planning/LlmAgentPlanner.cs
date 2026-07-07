@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AiCodeReviewAgent.Application.Agents.Orchestration;
+using AiCodeReviewAgent.Application.Agents.Tools;
 using AiCodeReviewAgent.Application.Reviews;
 
 namespace AiCodeReviewAgent.Application.Agents.Planning;
@@ -8,20 +9,24 @@ public sealed class LlmAgentPlanner : IAgentPlanner
 {
     private readonly IAiCodeReviewClient _aiClient;
     private readonly HeuristicAgentPlanner _fallbackPlanner;
+    private readonly IAgentToolProvider _toolProvider;
 
     public LlmAgentPlanner(
         IAiCodeReviewClient aiClient,
-        HeuristicAgentPlanner fallbackPlanner)
+        HeuristicAgentPlanner fallbackPlanner,
+        IAgentToolProvider toolProvider)
     {
         _aiClient = aiClient;
         _fallbackPlanner = fallbackPlanner;
+        _toolProvider = toolProvider;
     }
 
     public async Task<AgentPlan> CreatePlanAsync(
         AgentContext context,
         CancellationToken cancellationToken)
     {
-        var prompt = BuildPlannerPrompt(context);
+        var availableTools = await _toolProvider.ListToolsAsync(cancellationToken);
+        var prompt = BuildPlannerPrompt(context, availableTools);
 
         try
         {
@@ -34,7 +39,7 @@ public sealed class LlmAgentPlanner : IAgentPlanner
                 },
                 cancellationToken);
 
-            var plan = ParsePlan(response);
+            var plan = ParsePlan(response, availableTools);
 
             if (plan.Steps.Count == 0)
             {
@@ -53,38 +58,23 @@ public sealed class LlmAgentPlanner : IAgentPlanner
         }
     }
 
-    private static string BuildPlannerPrompt(AgentContext context)
+    private static string BuildPlannerPrompt(AgentContext context, IReadOnlyList<AgentToolDefinition> availableTools)
     {
+        var toolsDescription = string.Join(
+            Environment.NewLine,
+            availableTools.Select(tool =>
+                $"""
+                Tool: {tool.Name}
+                Description: {tool.Description}
+                Input: string
+                """));
         return $$"""
         Eres un planner de herramientas para un AI Code Review Agent.
 
         Tu tarea es decidir qué herramientas ejecutar antes de hacer el review del Pull Request.
 
         Herramientas disponibles:
-
-        1. read_file
-        - Lee el contenido completo de un archivo.
-        - Input esperado: ruta relativa del archivo dentro del repositorio.
-
-        2. search_text
-        - Busca referencias de un texto dentro del repositorio.
-        - Input esperado: texto a buscar, por ejemplo nombre de clase, interfaz o método.
-
-        3. read_solution
-        - Lee la solución .sln para entender estructura de proyectos.
-        - Input esperado: vacío.
-
-        4. read_project_file
-        - Lee archivos .csproj para entender dependencias.
-        - Input esperado: vacío.
-
-        5. find_class
-        - Busca la definición de una clase.
-        - Input esperado: nombre exacto de la clase.
-
-        6. find_interface
-        - Busca la definición de una interfaz.
-        - Input esperado: nombre exacto de la interfaz.
+        {{toolsDescription}}        
 
         Reglas:
         - Devuelve SOLO JSON válido.
@@ -116,7 +106,7 @@ public sealed class LlmAgentPlanner : IAgentPlanner
         """;
     }
 
-    private static AgentPlan ParsePlan(string response)
+    private static AgentPlan ParsePlan(string response, IReadOnlyList<AgentToolDefinition> availableTools)
     {
         var json = ExtractJson(response);
 
@@ -131,21 +121,10 @@ public sealed class LlmAgentPlanner : IAgentPlanner
         {
             return new AgentPlan();
         }
-
-        /* var allowedTools = new HashSet<string>(
-            ["read_file", "search_text"],
-            StringComparer.OrdinalIgnoreCase); */
         
-        var allowedTools = new HashSet<string>(
-            [
-                "read_file",
-                "search_text",
-                "read_solution",
-                "read_project_file",
-                "find_class",
-                "find_interface"
-            ],
-            StringComparer.OrdinalIgnoreCase);
+        var allowedTools = availableTools
+            .Select(x => x.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var steps = parsed.Steps
             .Where(x => allowedTools.Contains(x.ToolName))

@@ -5,11 +5,11 @@ namespace AiCodeReviewAgent.Application.Agents.Execution;
 
 public sealed class AgentToolExecutor : IAgentToolExecutor
 {
-    private readonly IAgentToolRegistry _toolRegistry;
+    private readonly IAgentToolProvider _toolProvider;
 
-    public AgentToolExecutor(IAgentToolRegistry toolRegistry)
+    public AgentToolExecutor(IAgentToolProvider toolProvider)
     {
-        _toolRegistry = toolRegistry;
+        _toolProvider = toolProvider;
     }
 
     public async Task<AgentToolResult> ExecuteAsync(
@@ -17,11 +17,10 @@ public sealed class AgentToolExecutor : IAgentToolExecutor
         AgentContext context,
         CancellationToken cancellationToken)
     {
-        var tool = _toolRegistry.GetRequiredTool(step.ToolName);
-
         try
         {
-            return await tool.ExecuteAsync(
+            return await _toolProvider.ExecuteAsync(
+                step.ToolName,
                 context.RepositoryPath,
                 step.Input,
                 cancellationToken);

@@ -46,6 +46,7 @@ builder.Services.AddScoped<IAgentTool, ReadSolutionTool>();
 builder.Services.AddScoped<IAgentTool, ReadProjectFileTool>();
 builder.Services.AddScoped<IAgentTool, FindClassTool>();
 builder.Services.AddScoped<IAgentTool, FindInterfaceTool>();
+builder.Services.AddScoped<IAgentToolProvider, LocalAgentToolProvider>();
 
 
 
