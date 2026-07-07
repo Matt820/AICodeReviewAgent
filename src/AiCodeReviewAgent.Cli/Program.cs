@@ -11,10 +11,13 @@ using AiCodeReviewAgent.Application.Tools;
 using AiCodeReviewAgent.Application.Configuration;
 using AiCodeReviewAgent.Application.Agents.Orchestration;
 using AiCodeReviewAgent.Application.Agents.Planning;
+using AiCodeReviewAgent.Application.Agents.Specialized;
 using AiCodeReviewAgent.Application.Agents.Tools;
 using AiCodeReviewAgent.Application.PullRequests;
 using AiCodeReviewAgent.Application.Agents.Execution;
 using AiCodeReviewAgent.Application.Agents.Prompts;
+using AiCodeReviewAgent.Application.Rag;
+using AiCodeReviewAgent.Infrastructure.Rag;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -47,7 +50,11 @@ builder.Services.AddScoped<IAgentTool, ReadProjectFileTool>();
 builder.Services.AddScoped<IAgentTool, FindClassTool>();
 builder.Services.AddScoped<IAgentTool, FindInterfaceTool>();
 builder.Services.AddScoped<IAgentToolProvider, LocalAgentToolProvider>();
-
+builder.Services.AddScoped<IRepositoryRetriever, LocalRepositoryRetriever>();
+builder.Services.AddScoped<RepositoryRagContextBuilder>();
+builder.Services.AddScoped<SpecializedReviewOrchestrator>();
+builder.Services.AddScoped<ISpecializedReviewAgent, SecurityReviewAgent>();
+builder.Services.AddScoped<ISpecializedReviewAgent, TestingReviewAgent>();
 
 
 

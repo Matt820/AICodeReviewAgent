@@ -11,6 +11,12 @@ public sealed class CodeReviewPromptBuilder : ICodeReviewPromptBuilder
         var testContext = BuildTestContext(agentContext);
         var rulesContext = BuildRulesContext(agentContext);
 
+        var ragContext = string.IsNullOrWhiteSpace(agentContext.RagContext)
+            ? "No se obtuvo contexto RAG."
+            : agentContext.RagContext;
+
+        var specializedContext = BuildSpecializedReviewsContext(agentContext);        
+
         return $"""
         Estás actuando como un AI Code Review Agent con herramientas.
 
@@ -31,8 +37,14 @@ public sealed class CodeReviewPromptBuilder : ICodeReviewPromptBuilder
         Contexto obtenido mediante tools del agente:
         {toolContext}
 
+        Contexto RAG del repositorio:
+        {ragContext}
+
         Reglas configuradas para este repositorio:
         {rulesContext}
+
+        Reviews especializados:
+        {specializedContext}
 
         Usa el contexto de las tools para detectar si el cambio afecta otras partes del sistema.
 
@@ -52,6 +64,21 @@ public sealed class CodeReviewPromptBuilder : ICodeReviewPromptBuilder
         - Recomendaciones
         - Riesgo: Low, Medium o High
         """;
+    }
+
+    private static string BuildSpecializedReviewsContext(AgentContext context)
+    {
+        if (context.SpecializedReviews.Count == 0)
+            return "No se ejecutaron agentes especializados.";
+
+        return string.Join(
+            Environment.NewLine + "---" + Environment.NewLine,
+            context.SpecializedReviews.Select(x =>
+                $"""
+                Agent: {x.AgentName}
+
+                {AgentTextLimiter.Limit(x.Markdown, 4000)}
+                """));
     }
 
     private static string BuildToolContext(AgentContext context)

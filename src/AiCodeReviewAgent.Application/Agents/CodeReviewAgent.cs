@@ -1,6 +1,8 @@
 using AiCodeReviewAgent.Application.Reviews;
 using AiCodeReviewAgent.Application.Agents.Orchestration;
 using AiCodeReviewAgent.Application.Agents.Prompts;
+using AiCodeReviewAgent.Application.Rag;
+using AiCodeReviewAgent.Application.Agents.Specialized;
 
 namespace AiCodeReviewAgent.Application.Agents;
 
@@ -22,16 +24,22 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
     private readonly IAiCodeReviewClient _aiClient;
     private readonly IAgentOrchestrator _orchestrator;
     private readonly ICodeReviewPromptBuilder _promptBuilder;
+    private readonly RepositoryRagContextBuilder _ragContextBuilder;
+    private readonly SpecializedReviewOrchestrator _specializedReviewOrchestrator;
 
     public CodeReviewAgent(
         //IEnumerable<IAgentTool> tools,
         IAgentOrchestrator orchestrator,
         ICodeReviewPromptBuilder promptBuilder,
+        RepositoryRagContextBuilder reagContextBuilder,
+        SpecializedReviewOrchestrator specializedReviewOrchestrator,
         IAiCodeReviewClient aiClient)
     {
         //_tools = tools;
         _orchestrator = orchestrator;
         _promptBuilder = promptBuilder;
+        _ragContextBuilder = reagContextBuilder;
+        _specializedReviewOrchestrator = specializedReviewOrchestrator;
         _aiClient = aiClient;
     }
 
@@ -56,6 +64,21 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
         await _orchestrator.ExecuteAsync(
             context,
             cancellationToken);
+
+        context.RagContext = await _ragContextBuilder.BuildAsync(
+            repositoryPath,
+            $"{changedFilePath} {Path.GetFileNameWithoutExtension(changedFilePath)}",
+            cancellationToken);
+        
+        var specializedReviews = await _specializedReviewOrchestrator.ReviewAsync(
+            new SpecializedReviewAgentRequest
+            {
+                ChangedFilePath = changedFilePath,
+                Context = context
+            },
+            cancellationToken);
+
+        context.SpecializedReviews.AddRange(specializedReviews);
 
         var prompt = _promptBuilder.Build(
             new CodeReviewPromptContext
