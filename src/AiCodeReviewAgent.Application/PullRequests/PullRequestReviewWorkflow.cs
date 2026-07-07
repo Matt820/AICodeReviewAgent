@@ -116,6 +116,7 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
                 buildResult,
                 testResult,
                 config.Rules,
+                config.Features,
                 cancellationToken);
 
             reviewsMarkdown.AppendLine($"### `{file.FileName}`");

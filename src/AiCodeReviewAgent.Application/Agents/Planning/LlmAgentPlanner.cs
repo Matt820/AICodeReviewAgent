@@ -30,6 +30,14 @@ public sealed class LlmAgentPlanner : IAgentPlanner
 
         try
         {
+
+            if (!context.UseLlmPlanner)
+            {
+                return await _fallbackPlanner.CreatePlanAsync(
+                    context,
+                    cancellationToken);
+            }
+
             var response = await _aiClient.AnalyzeCodeAsync(
                 new AnalyzeCodeRequest
                 {

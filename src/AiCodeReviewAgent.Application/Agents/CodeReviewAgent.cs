@@ -3,6 +3,7 @@ using AiCodeReviewAgent.Application.Agents.Orchestration;
 using AiCodeReviewAgent.Application.Agents.Prompts;
 using AiCodeReviewAgent.Application.Rag;
 using AiCodeReviewAgent.Application.Agents.Specialized;
+using AiCodeReviewAgent.Application.Configuration;
 
 namespace AiCodeReviewAgent.Application.Agents;
 
@@ -15,6 +16,7 @@ public interface ICodeReviewAgent
         AgentToolResult? buildResult,
         AgentToolResult? testResult,
         List<string> rules,
+        AiReviewFeatureOptions features,
         CancellationToken cancellationToken);
 }
 
@@ -49,7 +51,8 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
         string patch,
         AgentToolResult? buildResult,
         AgentToolResult? testResult,
-        List<string> rules,        
+        List<string> rules,
+        AiReviewFeatureOptions features,
         CancellationToken cancellationToken)
     {
         var context = new AgentContext
@@ -58,28 +61,35 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
             PullRequestDiff = patch,
             BuildResult = buildResult,
             TestResult = testResult,
-            Rules = rules
+            Rules = rules,
+            UseLlmPlanner = features.LlmPlanner
         };
 
         await _orchestrator.ExecuteAsync(
             context,
             cancellationToken);
 
-        context.RagContext = await _ragContextBuilder.BuildAsync(
-            repositoryPath,
-            $"{changedFilePath} {Path.GetFileNameWithoutExtension(changedFilePath)}",
-            cancellationToken);
+        if (features.Rag)
+        {
+            context.RagContext = await _ragContextBuilder.BuildAsync(
+                repositoryPath,
+                $"{changedFilePath} {Path.GetFileNameWithoutExtension(changedFilePath)}",
+                cancellationToken);
+        }
+
+        if(features.SpecializedAgents)
+        {
+            var specializedReviews = await _specializedReviewOrchestrator.ReviewAsync(
+                new SpecializedReviewAgentRequest
+                {
+                    ChangedFilePath = changedFilePath,
+                    Context = context
+                },
+                cancellationToken);
+
+            context.SpecializedReviews.AddRange(specializedReviews);
+        }
         
-        var specializedReviews = await _specializedReviewOrchestrator.ReviewAsync(
-            new SpecializedReviewAgentRequest
-            {
-                ChangedFilePath = changedFilePath,
-                Context = context
-            },
-            cancellationToken);
-
-        context.SpecializedReviews.AddRange(specializedReviews);
-
         var prompt = _promptBuilder.Build(
             new CodeReviewPromptContext
             {

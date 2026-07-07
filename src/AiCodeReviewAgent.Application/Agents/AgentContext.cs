@@ -11,5 +11,6 @@ public sealed class AgentContext
     public List<AgentToolResult> ToolResults { get; set; } = [];
     public List<string> Rules { get; set;} = [];
     public string RagContext { get; set; } = string.Empty;
+    public bool UseLlmPlanner { get; set; }
     public List<SpecializedReviewAgentResult> SpecializedReviews { get; set; } = [];
 }

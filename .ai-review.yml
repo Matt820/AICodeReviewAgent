@@ -1,5 +1,11 @@
 language: csharp
-max_files: 10
+max_files: 3
+
+features:
+  llm_planner: false
+  rag: false
+  specialized_agents: false
+
 rules:
   - Revisar Clean Architecture.
   - Evitar Console.WriteLine en producción.
