@@ -9,7 +9,7 @@ public sealed class AgentPipeline : IAgentPipeline
         _stages = stages;
     }
 
-    public async Task<AgentPipelineResult> ExecuteAsync(
+    public async Task ExecuteAsync(
         AgentPipelineContext context,
         CancellationToken cancellationToken)
     {
@@ -17,10 +17,5 @@ public sealed class AgentPipeline : IAgentPipeline
         {
             await stage.ExecuteAsync(context, cancellationToken);
         }
-
-        return new AgentPipelineResult
-        {
-            ReviewMarkdown = context.ReviewMarkdown
-        };
     }
 }

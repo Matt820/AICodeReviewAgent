@@ -2,7 +2,7 @@ namespace AiCodeReviewAgent.Application.Agents.Pipeline;
 
 public interface IAgentPipeline
 {
-    Task<AgentPipelineResult> ExecuteAsync(
+    Task ExecuteAsync(
         AgentPipelineContext context,
         CancellationToken cancellationToken);
 }
