@@ -4,6 +4,7 @@ using AiCodeReviewAgent.Application.Agents.Prompts;
 using AiCodeReviewAgent.Application.Rag;
 using AiCodeReviewAgent.Application.Agents.Specialized;
 using AiCodeReviewAgent.Application.Configuration;
+using AiCodeReviewAgent.Application.Agents.Pipeline;
 
 namespace AiCodeReviewAgent.Application.Agents;
 
@@ -28,6 +29,7 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
     private readonly ICodeReviewPromptBuilder _promptBuilder;
     private readonly RepositoryRagContextBuilder _ragContextBuilder;
     private readonly SpecializedReviewOrchestrator _specializedReviewOrchestrator;
+    private readonly IAgentPipeline _pipeline;
 
     public CodeReviewAgent(
         //IEnumerable<IAgentTool> tools,
@@ -35,7 +37,8 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
         ICodeReviewPromptBuilder promptBuilder,
         RepositoryRagContextBuilder reagContextBuilder,
         SpecializedReviewOrchestrator specializedReviewOrchestrator,
-        IAiCodeReviewClient aiClient)
+        IAiCodeReviewClient aiClient,
+        IAgentPipeline pipeline)
     {
         //_tools = tools;
         _orchestrator = orchestrator;
@@ -43,6 +46,7 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
         _ragContextBuilder = reagContextBuilder;
         _specializedReviewOrchestrator = specializedReviewOrchestrator;
         _aiClient = aiClient;
+        _pipeline = pipeline;
     }
 
     public async Task<string> ReviewPullRequestAsync(
@@ -62,8 +66,21 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
             BuildResult = buildResult,
             TestResult = testResult,
             Rules = rules,
-            UseLlmPlanner = features.LlmPlanner
+            UseLlmPlanner = features.LlmPlanner,
+            Features = features
         };
+
+        /* var result = await _pipeline.ExecuteAsync(
+            new AgentPipelineContext
+            {
+                RepositoryPath = repositoryPath,
+                ChangedFilePath = changedFilePath,
+                Patch = patch,
+                AgentContext = agentContext
+            },
+            cancellationToken);
+
+        return result.ReviewMarkdown; */
 
         await _orchestrator.ExecuteAsync(
             context,
@@ -88,7 +105,7 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
                 cancellationToken);
 
             context.SpecializedReviews.AddRange(specializedReviews);
-        }
+        }             
         
         var prompt = _promptBuilder.Build(
             new CodeReviewPromptContext
@@ -104,89 +121,6 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
                 Language = "diff",
                 Code = prompt
             },
-            cancellationToken);
-    }
-
-    private static string BuildPrompt(string changedFilePath, AgentContext context)
-    {
-        var toolContext = string.Join(
-            Environment.NewLine,
-            context.ToolResults.Select(x =>
-                $"""
-                Tool: {x.ToolName}
-                Success: {x.Success}
-                Output:
-                {AgentTextLimiter.Limit(x.Output)}
-                Error:
-                {AgentTextLimiter.Limit(x.Error)}
-                """));
-        
-        var buildContext = context.BuildResult is null
-            ? "Build no ejecutado."
-            : $"""
-            Build:
-            Success: {context.BuildResult.Success}
-            Output:
-            {AgentTextLimiter.Limit(context.BuildResult.Output)}
-            Error:
-            {AgentTextLimiter.Limit(context.BuildResult.Error)}
-            """;
-
-        var testContext = context.TestResult is null
-            ? "Tests no ejecutados."
-            : $"""
-            Tests:
-            Success: {context.TestResult.Success}
-            Output:
-            {AgentTextLimiter.Limit(context.TestResult.Output)}
-            Error:
-            {AgentTextLimiter.Limit(context.TestResult.Error)}
-            """;
-
-        var rulesContext = context.Rules.Count == 0
-            ? "No se configuraron reglas personalizadas."
-            : string.Join(Environment.NewLine, context.Rules.Select(rule => $"- {rule}"));
-
-        return $"""
-        Estás actuando como un AI Code Review Agent con herramientas.
-
-        Archivo modificado:
-        {changedFilePath}
-
-        Diff del Pull Request:
-        ```diff
-        {context.PullRequestDiff}        
-        ```
-
-        Resultado del build:
-        {buildContext}
-
-        Resultado de tests:
-        {testContext}
-
-        Contexto obtenido mediante tools del agente:
-        {toolContext}
-
-        Reglas configuradas para este repositorio:
-        {rulesContext}
-
-        Usa el contexto de las tools para detectar si el cambio afecta otras partes del sistema.
-
-        Realiza un code review profesional en español.
-
-        Evalúa:
-        - Bugs potenciales
-        - Seguridad
-        - Clean Architecture
-        - Mantenibilidad
-        - Buenas prácticas .NET
-        - Posibles tests faltantes
-
-        Responde en Markdown con:
-        - Resumen
-        - Observaciones
-        - Recomendaciones
-        - Riesgo: Low, Medium o High
-        """;
+            cancellationToken);              
     }
 }

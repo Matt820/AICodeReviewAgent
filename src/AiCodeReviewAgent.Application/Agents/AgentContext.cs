@@ -1,4 +1,5 @@
 using AiCodeReviewAgent.Application.Agents.Specialized;
+using AiCodeReviewAgent.Application.Configuration;
 
 namespace AiCodeReviewAgent.Application.Agents;
 
@@ -13,4 +14,5 @@ public sealed class AgentContext
     public string RagContext { get; set; } = string.Empty;
     public bool UseLlmPlanner { get; set; }
     public List<SpecializedReviewAgentResult> SpecializedReviews { get; set; } = [];
+    public AiReviewFeatureOptions Features { get; set; } = new();
 }
