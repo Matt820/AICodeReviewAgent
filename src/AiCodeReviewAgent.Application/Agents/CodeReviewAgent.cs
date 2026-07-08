@@ -25,7 +25,7 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
 {
     //private readonly IEnumerable<IAgentTool> _tools;
     private readonly IAiCodeReviewClient _aiClient;
-    private readonly IAgentOrchestrator _orchestrator;
+    //private readonly IAgentOrchestrator _orchestrator;
     private readonly ICodeReviewPromptBuilder _promptBuilder;
     private readonly RepositoryRagContextBuilder _ragContextBuilder;
     private readonly SpecializedReviewOrchestrator _specializedReviewOrchestrator;
@@ -33,7 +33,7 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
 
     public CodeReviewAgent(
         //IEnumerable<IAgentTool> tools,
-        IAgentOrchestrator orchestrator,
+        //IAgentOrchestrator orchestrator,
         ICodeReviewPromptBuilder promptBuilder,
         RepositoryRagContextBuilder reagContextBuilder,
         SpecializedReviewOrchestrator specializedReviewOrchestrator,
@@ -41,7 +41,7 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
         IAgentPipeline pipeline)
     {
         //_tools = tools;
-        _orchestrator = orchestrator;
+        //_orchestrator = orchestrator;
         _promptBuilder = promptBuilder;
         _ragContextBuilder = reagContextBuilder;
         _specializedReviewOrchestrator = specializedReviewOrchestrator;
@@ -82,8 +82,15 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
 
         return result.ReviewMarkdown; */
 
-        await _orchestrator.ExecuteAsync(
-            context,
+        //await _orchestrator.ExecuteAsync(context, cancellationToken);
+        await _pipeline.ExecuteAsync(
+            new AgentPipelineContext
+            {
+                RepositoryPath = repositoryPath,
+                ChangedFilePath = changedFilePath,
+                Patch = patch,
+                AgentContext = context
+            },
             cancellationToken);
 
         if (features.Rag)
