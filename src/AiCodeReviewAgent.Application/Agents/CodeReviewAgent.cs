@@ -27,8 +27,8 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
     private readonly IAiCodeReviewClient _aiClient;
     //private readonly IAgentOrchestrator _orchestrator;
     private readonly ICodeReviewPromptBuilder _promptBuilder;
-    private readonly RepositoryRagContextBuilder _ragContextBuilder;
-    private readonly SpecializedReviewOrchestrator _specializedReviewOrchestrator;
+    //private readonly RepositoryRagContextBuilder _ragContextBuilder;
+    //private readonly SpecializedReviewOrchestrator _specializedReviewOrchestrator;
     private readonly IAgentPipeline _pipeline;
 
     public CodeReviewAgent(
@@ -43,8 +43,8 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
         //_tools = tools;
         //_orchestrator = orchestrator;
         _promptBuilder = promptBuilder;
-        _ragContextBuilder = reagContextBuilder;
-        _specializedReviewOrchestrator = specializedReviewOrchestrator;
+        //_ragContextBuilder = reagContextBuilder;
+        //_specializedReviewOrchestrator = specializedReviewOrchestrator;
         _aiClient = aiClient;
         _pipeline = pipeline;
     }
@@ -81,8 +81,7 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
             cancellationToken);
 
         return result.ReviewMarkdown; */
-
-        //await _orchestrator.ExecuteAsync(context, cancellationToken);
+        
         await _pipeline.ExecuteAsync(
             new AgentPipelineContext
             {
@@ -93,27 +92,6 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
             },
             cancellationToken);
 
-        if (features.Rag)
-        {
-            context.RagContext = await _ragContextBuilder.BuildAsync(
-                repositoryPath,
-                $"{changedFilePath} {Path.GetFileNameWithoutExtension(changedFilePath)}",
-                cancellationToken);
-        }
-
-        if(features.SpecializedAgents)
-        {
-            var specializedReviews = await _specializedReviewOrchestrator.ReviewAsync(
-                new SpecializedReviewAgentRequest
-                {
-                    ChangedFilePath = changedFilePath,
-                    Context = context
-                },
-                cancellationToken);
-
-            context.SpecializedReviews.AddRange(specializedReviews);
-        }             
-        
         var prompt = _promptBuilder.Build(
             new CodeReviewPromptContext
             {
