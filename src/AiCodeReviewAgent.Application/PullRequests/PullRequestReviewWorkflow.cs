@@ -19,6 +19,7 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
     private readonly AiUsageMetrics _usageMetrics;
     private readonly AiBudgetOptions _budgetOptions;
     private readonly IAiBudgetGuard _budgetGuard;
+    private readonly PipelineExecutionMetrics _pipelineMetrics;
 
     public PullRequestReviewWorkflow(
         IAiReviewConfigurationLoader configLoader,
@@ -29,7 +30,8 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
         IEnumerable<IAgentTool> tools,
         AiUsageMetrics usageMetrics,
         AiBudgetOptions budgetOptions,
-        IAiBudgetGuard budgetGuard)
+        IAiBudgetGuard budgetGuard,
+        PipelineExecutionMetrics pipelineMetrics)
     {
         _configLoader = configLoader;
         _githubClient = githubClient;
@@ -40,6 +42,7 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
         _usageMetrics = usageMetrics;
         _budgetOptions = budgetOptions;
         _budgetGuard = budgetGuard;
+        _pipelineMetrics = pipelineMetrics;
     }
 
     public async Task ExecuteAsync(
@@ -146,6 +149,7 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
         }
 
         AppendUsageMetrics(prMarkdown, _usageMetrics, _budgetGuard);
+        AppendPipelineMetrics(prMarkdown, _pipelineMetrics);
 
         var executiveSummary = await _summaryAgent.GenerateSummaryAsync(
             new PullRequestReviewSummaryRequest
@@ -255,6 +259,37 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
         prMarkdown.AppendLine("> Estimación aproximada usando 1 token ≈ 4 caracteres.");
         prMarkdown.AppendLine();
         prMarkdown.AppendLine($"- Budget excedido: `{(budgetGuard.WasBudgetExceeded ? "Sí" : "No")}`");
+        prMarkdown.AppendLine("---");
+        prMarkdown.AppendLine();
+    }
+    private static void AppendPipelineMetrics(
+    StringBuilder prMarkdown,
+    PipelineExecutionMetrics metrics)
+    {
+        prMarkdown.AppendLine("## Pipeline metrics");
+        prMarkdown.AppendLine();
+
+        if (metrics.Stages.Count == 0)
+        {
+            prMarkdown.AppendLine("No se registraron métricas del pipeline.");
+            prMarkdown.AppendLine();
+            return;
+        }
+
+        foreach (var stage in metrics.Stages)
+        {
+            prMarkdown.AppendLine(
+                $"- `{stage.StageName}`: {stage.DurationMs} ms - {(stage.Success ? "✅" : "❌")}");
+
+            if (!string.IsNullOrWhiteSpace(stage.Error))
+            {
+                prMarkdown.AppendLine($"  - Error: `{stage.Error}`");
+            }
+        }
+
+        prMarkdown.AppendLine();
+        prMarkdown.AppendLine($"**Duración total del pipeline:** `{metrics.TotalDurationMs} ms`");
+        prMarkdown.AppendLine();
         prMarkdown.AppendLine("---");
         prMarkdown.AppendLine();
     }
