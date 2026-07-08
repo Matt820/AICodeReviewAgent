@@ -4,6 +4,7 @@ public sealed class AiBudgetGuard : IAiBudgetGuard
 {
     private readonly AiUsageMetrics _metrics;
     private readonly AiBudgetOptions _options;
+    public bool WasBudgetExceeded { get; private set; }
 
     public AiBudgetGuard(
         AiUsageMetrics metrics,
@@ -18,11 +19,14 @@ public sealed class AiBudgetGuard : IAiBudgetGuard
         var estimatedInputTokens = (input?.Length ?? 0) / 4;
 
         if (_metrics.AiCalls >= _options.MaxAiCalls)
+        {            
             return false;
+        }
 
         if (_metrics.EstimatedTotalTokens + estimatedInputTokens >= _options.MaxEstimatedTokens)
             return false;
 
+        WasBudgetExceeded = true;
         return true;
     }
 

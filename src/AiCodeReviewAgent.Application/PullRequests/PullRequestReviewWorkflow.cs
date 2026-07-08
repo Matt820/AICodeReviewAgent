@@ -18,6 +18,7 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
     private readonly IEnumerable<IAgentTool> _tools;
     private readonly AiUsageMetrics _usageMetrics;
     private readonly AiBudgetOptions _budgetOptions;
+    private readonly IAiBudgetGuard _budgetGuard;
 
     public PullRequestReviewWorkflow(
         IAiReviewConfigurationLoader configLoader,
@@ -27,7 +28,8 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
         IPullRequestSummaryAgent summaryAgent,
         IEnumerable<IAgentTool> tools,
         AiUsageMetrics usageMetrics,
-        AiBudgetOptions budgetOptions)
+        AiBudgetOptions budgetOptions,
+        IAiBudgetGuard budgetGuard)
     {
         _configLoader = configLoader;
         _githubClient = githubClient;
@@ -37,6 +39,7 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
         _tools = tools;
         _usageMetrics = usageMetrics;
         _budgetOptions = budgetOptions;
+        _budgetGuard = budgetGuard;
     }
 
     public async Task ExecuteAsync(
@@ -142,7 +145,7 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
             prMarkdown.AppendLine();
         }
 
-        AppendUsageMetrics(prMarkdown, _usageMetrics);
+        AppendUsageMetrics(prMarkdown, _usageMetrics, _budgetGuard);
 
         var executiveSummary = await _summaryAgent.GenerateSummaryAsync(
             new PullRequestReviewSummaryRequest
@@ -239,7 +242,8 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
     }
     private static void AppendUsageMetrics(
         StringBuilder prMarkdown,
-        AiUsageMetrics metrics)
+        AiUsageMetrics metrics,
+        IAiBudgetGuard budgetGuard)
     {
         prMarkdown.AppendLine("## Uso estimado de IA");
         prMarkdown.AppendLine();
@@ -250,6 +254,7 @@ public sealed class PullRequestReviewWorkflow : IPullRequestReviewWorkflow
         prMarkdown.AppendLine();
         prMarkdown.AppendLine("> Estimación aproximada usando 1 token ≈ 4 caracteres.");
         prMarkdown.AppendLine();
+        prMarkdown.AppendLine($"- Budget excedido: `{(budgetGuard.WasBudgetExceeded ? "Sí" : "No")}`");
         prMarkdown.AppendLine("---");
         prMarkdown.AppendLine();
     }
