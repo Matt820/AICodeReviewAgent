@@ -1,8 +1,3 @@
-using AiCodeReviewAgent.Application.Reviews;
-using AiCodeReviewAgent.Application.Agents.Orchestration;
-using AiCodeReviewAgent.Application.Agents.Prompts;
-using AiCodeReviewAgent.Application.Rag;
-using AiCodeReviewAgent.Application.Agents.Specialized;
 using AiCodeReviewAgent.Application.Configuration;
 using AiCodeReviewAgent.Application.Agents.Pipeline;
 
@@ -22,30 +17,12 @@ public interface ICodeReviewAgent
 }
 
 public sealed class CodeReviewAgent : ICodeReviewAgent
-{
-    //private readonly IEnumerable<IAgentTool> _tools;
-    private readonly IAiCodeReviewClient _aiClient;
-    //private readonly IAgentOrchestrator _orchestrator;
-    private readonly ICodeReviewPromptBuilder _promptBuilder;
-    //private readonly RepositoryRagContextBuilder _ragContextBuilder;
-    //private readonly SpecializedReviewOrchestrator _specializedReviewOrchestrator;
+{    
     private readonly IAgentPipeline _pipeline;
 
-    public CodeReviewAgent(
-        //IEnumerable<IAgentTool> tools,
-        //IAgentOrchestrator orchestrator,
-        ICodeReviewPromptBuilder promptBuilder,
-        RepositoryRagContextBuilder reagContextBuilder,
-        SpecializedReviewOrchestrator specializedReviewOrchestrator,
-        IAiCodeReviewClient aiClient,
+    public CodeReviewAgent(        
         IAgentPipeline pipeline)
-    {
-        //_tools = tools;
-        //_orchestrator = orchestrator;
-        _promptBuilder = promptBuilder;
-        //_ragContextBuilder = reagContextBuilder;
-        //_specializedReviewOrchestrator = specializedReviewOrchestrator;
-        _aiClient = aiClient;
+    {        
         _pipeline = pipeline;
     }
 
@@ -70,42 +47,18 @@ public sealed class CodeReviewAgent : ICodeReviewAgent
             Features = features
         };
 
-        /* var result = await _pipeline.ExecuteAsync(
-            new AgentPipelineContext
-            {
-                RepositoryPath = repositoryPath,
-                ChangedFilePath = changedFilePath,
-                Patch = patch,
-                AgentContext = agentContext
-            },
-            cancellationToken);
+        var pipelineContext = new AgentPipelineContext
+        {
+            RepositoryPath = repositoryPath,
+            ChangedFilePath = changedFilePath,
+            Patch = patch,
+            AgentContext = context
+        };
 
-        return result.ReviewMarkdown; */
-        
         await _pipeline.ExecuteAsync(
-            new AgentPipelineContext
-            {
-                RepositoryPath = repositoryPath,
-                ChangedFilePath = changedFilePath,
-                Patch = patch,
-                AgentContext = context
-            },
+            pipelineContext,
             cancellationToken);
 
-        var prompt = _promptBuilder.Build(
-            new CodeReviewPromptContext
-            {
-                ChangedFilePath = changedFilePath,
-                AgentContext = context
-            });   
-
-        return await _aiClient.AnalyzeCodeAsync(
-            new AnalyzeCodeRequest
-            {
-                FileName = changedFilePath,
-                Language = "diff",
-                Code = prompt
-            },
-            cancellationToken);              
+        return pipelineContext.ReviewMarkdown;         
     }
 }
