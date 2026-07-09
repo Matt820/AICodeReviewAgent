@@ -21,6 +21,7 @@ using AiCodeReviewAgent.Infrastructure.Rag;
 using AiCodeReviewAgent.Application.Observability;
 using AiCodeReviewAgent.Application.Agents.Pipeline;
 using AiCodeReviewAgent.Application.Agents.Pipeline.Stages;
+using AiCodeReviewAgent.Application.Caching;
 
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -82,6 +83,7 @@ builder.Services.AddScoped<IAgentPipelineStage, SpecializedReviewStage>();
 builder.Services.AddScoped<IAgentPipelineStage, PromptBuildStage>();
 builder.Services.AddScoped<IAgentPipelineStage, LlmReviewStage>();
 builder.Services.AddScoped<PipelineExecutionMetrics>();
+builder.Services.AddSingleton<IAgentCache, InMemoryAgentCache>();
 
 
 
